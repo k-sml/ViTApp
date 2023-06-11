@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>ViT Recognizer</title>
+        <link rel="icon" href="{{url_for('static', filename='img/favicon.ico')}}">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" integrity="sha384-F3w7mX95PdgyTmZZMECAngseQB83DfGTowi0iMjiWaeVhAn4FJkqJByhZMI3AhiU" crossorigin="anonymous">
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+        <style>
+            .header {
+                margin-bottom: 12px;
+            }
+            nav {
+                height: 65px;
+            }
+            .ibox {
+                border: 2px dotted rgb(22, 98, 101);
+                width: 400px;
+                height: 320px;
+                vertical-align: bottom;
+                border-radius: 5%;
+                margin: 12px;
+            }
+            h1 {
+                color: gray;
+            }
+            img {
+                width: 280px;
+                height: 280px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <nav class="navbar navbar-dark bg-dark">
+                <p id="logo">
+                    <img style="height:50px;width:50px;margin-right:12px;" src="{{url_for('static',filename='img/logo.png')}}">
+                    <font color='white'>ViT Recognizer</font>
+                </p>
+            </nav>
+        </div>
+        <div class="container">
+            <form id="ul_form">
+                <label>
+                <div class="btn btn-primary" style="margin-left: 12px;">
+                    ファイル選択
+                    <input type="file" name="img_file" accept="image/*" style="display: none">
+                </div>
+                </label>
+                <button class="btn btn-primary" id="upload_btn" type="button">アップロード</button>
+                {% if img_url %}
+                <button type="button" class="btn btn-primary" id="recog_button">画像認識</button>
+                {% endif %}
+            </form>
+            <div class="row">
+                <div class="col-12 ibox" id="img_box">
+                    {% if img_url %}
+                        <img id="uld_img" src="{{img_url}}">
+                        <form id="recog_form">
+                            <input type="hidden" name="img_path">
+                        </form>
+                        <p>アップロードされた画像</p>
+                    {% else %}
+                    <h1>画像をアップロードしてください。</h1>
+                    {% endif %}
+                </div>
+                <div class="col-12 ibox" id="res_box">
+                    {% if pred_label %}
+                    <h1>{{pred_label}}</h1>
+                    {% else %}
+                    <h1>画像認識結果が表示されます。</h1>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </body>
+    <script>
+        // JQuery
+        $(function(){
+            // $("input[type=file]").after('<span></span>');
+            $("input[type=file]").change(function(){
+                var file = $(this).prop("files")[0];
+
+                // 画像以外選択できないようにする
+                if (! file.type.match("image.*")) {
+                    $(this).val('')
+                    return
+                }
+
+                画像だった場合(IE9以下では使用不可)
+                var reader = new FileReader();
+                reader.onload = function() {
+                    // reader.resultには今選択中のファイルのローカルのパスが入る
+                    var img_src = $("<img id='img_bef'>").attr("src", reader.result);
+                    // サムネイルを表示する
+                    $("#img_box").html(img_src);
+                    $("<p>アップロード前画像(選択中)</p>").insertAfter("#img_bef");
+                }
+                reader.readAsDataURL(file);
+            })
+
+            $("#upload_btn").on("click", function(){
+                // upload buttonが押された時の処理
+                // attrメソッドは、HTML要素の様々な属性の値を取得変更できるメソッド
+                // target属性はリンク先の文書を開くフレームやウィンドウを指定するための属性
+                $("#ul_form").attr("target", "_blank");
+                // method属性はデータの送信方法
+                $("#ul_form").attr("method", "post");
+                // action属性はフォームの送信先を設定、url_forはflaskの便利な関数
+                $("#ul_form").attr("action", "{{url_for('upload')}}");
+                // type属性にfileが設定されたinput要素をフォームに使うときはこれを設定する
+                $("#ul_form").attr("enctype", "multipart/form-data");
+                // データをサーバーに送信する
+                $("#ul_form").submit();
+            })
+
+            $("#recog_button").on("click", function(){
+                // img_pathの名前がついたinput要素のvalueをuld_imgのsrcとしてサーバーに送る
+                $("input[name='img_path']").val($("#uld_img").attr("src"));
+                $("#recog_form").attr("target", "_self");
+                //post methodを指定したらapp.pyでも指定する必要がある。
+                $("#recog_form").attr("method", "post");
+                $("#recog_form").attr("action", "{{url_for('recognition')}}");
+                // #res_boxを<h1>に置き換える
+                $("#res_box").html("<h1>画像認識中・・・</h1>");
+                $("#recog_form").submit();
+            })
+            $("#logo").on("click", function(){
+                // ページ遷移を実現
+                window.location.href = "{{url_for('index')}}"
+            })
+        });
+    </script>
+</html>
